@@ -1,30 +1,22 @@
 package quaternary.simpletrophies.common.block;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.material.MapColor;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.properties.PropertyEnum;
-import net.minecraft.block.state.BlockFaceShape;
-import net.minecraft.block.state.BlockStateContainer;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemDye;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumBlockRenderType;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
-import net.minecraft.util.NonNullList;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.world.IBlockAccess;
+import net.minecraft.util.math.shapes.ISelectionContext;
+import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import quaternary.simpletrophies.common.etc.EnumTrophyVariant;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import quaternary.simpletrophies.common.etc.TrophyHelpers;
 import quaternary.simpletrophies.common.tile.TileSimpleTrophy;
 
@@ -39,43 +31,37 @@ public class BlockSimpleTrophy extends Block {
 	public static final String KEY_COLOR_BLUE = "TrophyColorBlue";
 	public static final String KEY_VARIANT = "TrophyVariant";
 	public static final String KEY_EARNED_AT = "TrophyEarnedAt";
-	
-	public static final PropertyEnum<EnumTrophyVariant> PROP_VARIANT = PropertyEnum.create("trophy_variant", EnumTrophyVariant.class);
-	
-	public BlockSimpleTrophy() {
-		super(Material.ROCK, MapColor.GOLD);
-		setHardness(2f);
-		setResistance(1f);
-		
-		setDefaultState(getDefaultState().withProperty(PROP_VARIANT, EnumTrophyVariant.CLASSIC));
+
+	public BlockSimpleTrophy(Properties properties) {
+		super(properties);
 	}
 	
 	private static final AxisAlignedBB AABB = new AxisAlignedBB(0, 0, 0, 1, 6/16d, 1);
-	
+
 	@Override
-	public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source, BlockPos pos) {
-		return AABB;
+	public VoxelShape getCollisionShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+		return Block.makeCuboidShape(0,0,0,16,6,16);
 	}
-	
+
 	@Override
-	public boolean hasTileEntity(IBlockState state) {
+	public boolean hasTileEntity(BlockState state) {
 		return true;
 	}
-	
+
 	@Nullable
 	@Override
-	public TileEntity createTileEntity(World world, IBlockState state) {
+	public TileEntity createTileEntity(BlockState state, IBlockReader world) {
 		return new TileSimpleTrophy();
 	}
-	
+
 	@Override
-	public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
+	public boolean onBlockActivated(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult result) {
 		if(!player.isCreative()) return false;
 		
 		TileEntity tile = world.getTileEntity(pos);
 		if(tile instanceof TileSimpleTrophy) {
 			TileSimpleTrophy trophy = (TileSimpleTrophy) tile;			
-			int averageColor = getAverageDyeColorHeldByPlayer(player);
+			int averageColor = -1;//getAverageDyeColorHeldByPlayer(player);
 			if(averageColor == -1) {
 				trophy.displayedStack = player.getHeldItem(hand).copy();
 			} else {
@@ -84,7 +70,7 @@ public class BlockSimpleTrophy extends Block {
 				trophy.displayedColorBlue = averageColor & 0x0000FF;
 			}
 			
-			IBlockState hahaYes = world.getBlockState(pos);
+			BlockState hahaYes = world.getBlockState(pos);
 			world.notifyBlockUpdate(pos, hahaYes, hahaYes, 2);
 			trophy.markDirty();
 			return true;
@@ -92,105 +78,26 @@ public class BlockSimpleTrophy extends Block {
 		
 		return false;
 	}
-	
-	private static int getAverageDyeColorHeldByPlayer(EntityPlayer player) {
-		int color = -1;
-		ItemStack main = player.getHeldItem(EnumHand.MAIN_HAND);
-		if(main.getItem() instanceof ItemDye && MathHelper.clamp(main.getMetadata(), 0, 15) == main.getMetadata()) {
-			color = ItemDye.DYE_COLORS[main.getMetadata()];
-		}
-		
-		ItemStack off = player.getHeldItem(EnumHand.OFF_HAND);
-		if(off.getItem() instanceof ItemDye && MathHelper.clamp(off.getMetadata(), 0, 15) == off.getMetadata()) {
-			int color2 = ItemDye.DYE_COLORS[off.getMetadata()];
-			int red = (((color & 0xFF0000) >> 16) + ((color2 & 0xFF0000) >> 16)) / 2;
-			int green = (((color & 0x00FF00) >> 8) + ((color2 & 0x00FF00) >> 8)) / 2;
-			int blue = ((color & 0x0000FF) + (color2 & 0x0000FF)) / 2;
-			color = (red << 16) | (green << 8) | blue;
-		}
-		
-		return color;
-	}
-	
+
 	@Override
-	public void breakBlock(World world, BlockPos pos, IBlockState state) {
+	public void onReplaced(BlockState state,World world, BlockPos pos, BlockState newState,boolean isMoving) {
 		TileEntity tile = world.getTileEntity(pos);
 		if(tile instanceof TileSimpleTrophy) {
 			spawnAsEntity(world, pos, TrophyHelpers.createItemStackFromTile((TileSimpleTrophy) tile));
 		}
 		
-		super.breakBlock(world, pos, state);
+		super.onReplaced(state,world, pos, newState,isMoving);
 	}
 	
-	@Override
-	public boolean isFullBlock(IBlockState state) {
-		return false;
-	}
-	
-	@Override
-	public boolean isFullCube(IBlockState state) {
-		return false;
-	}
-	
-	@Override
-	public boolean isOpaqueCube(IBlockState state) {
-		return false;
-	}
-	
-	@SideOnly(Side.CLIENT)
-	@Override
-	public boolean isTranslucent(IBlockState state) {
-		return true;
-	}
-	
-	@Override
-	public int getLightOpacity(IBlockState state) {
-		return 0;
-	}
-	
-	@Override
-	protected BlockStateContainer createBlockState() {
-		return new BlockStateContainer(this, PROP_VARIANT);
-	}
-	
-	//Required to override this even though I don't use meta since the default implementation throws.
-	@Override
-	public int getMetaFromState(IBlockState state) {
-		return 0;
-	}
-	
-	@Override
-	public IBlockState getActualState(IBlockState state, IBlockAccess world, BlockPos pos) {
-		TileEntity tile = world.getTileEntity(pos);
-		if(tile instanceof TileSimpleTrophy) {
-			return state.withProperty(PROP_VARIANT, ((TileSimpleTrophy)tile).displayedVariant);
-		} else return state;
-	}
-	
-	@SideOnly(Side.CLIENT)
+	@OnlyIn(Dist.CLIENT)
 	@Override
 	public BlockRenderLayer getRenderLayer() {
 		return BlockRenderLayer.CUTOUT_MIPPED;
 	}
-	
+
 	@Override
-	public BlockFaceShape getBlockFaceShape(IBlockAccess world, IBlockState state, BlockPos pos, EnumFacing face) {
-		return face == EnumFacing.DOWN ? BlockFaceShape.SOLID : BlockFaceShape.UNDEFINED;
-	}
-	
-	@Override
-	public ItemStack getPickBlock(IBlockState state, RayTraceResult target, World world, BlockPos pos, EntityPlayer player) {
+	public ItemStack getPickBlock(BlockState state, RayTraceResult target, IBlockReader world, BlockPos pos, PlayerEntity player) {
 		TileEntity tile = world.getTileEntity(pos);
 		return TrophyHelpers.createItemStackFromTile(tile instanceof TileSimpleTrophy ? ((TileSimpleTrophy)tile) : null);
-	}
-	
-	@Override
-	public void getDrops(NonNullList<ItemStack> drops, IBlockAccess world, BlockPos pos, IBlockState state, int fortune) {
-		//No-op since breakBlock handles this.
-	}
-	
-	@Override
-	public void dropBlockAsItemWithChance(World worldIn, BlockPos pos, IBlockState state, float chance, int fortune) {
-		//No-op since breakBlock handles this too.
 	}
 }

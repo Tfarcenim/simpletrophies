@@ -1,32 +1,27 @@
 package quaternary.simpletrophies.common.item;
 
 import net.minecraft.advancements.CriteriaTriggers;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.EnumRarity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.item.*;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.EnumActionResult;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
+import net.minecraft.util.ActionResultType;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.translation.I18n;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import org.apache.logging.log4j.LogManager;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import quaternary.simpletrophies.SimpleTrophies;
 import quaternary.simpletrophies.common.block.BlockSimpleTrophy;
-import quaternary.simpletrophies.common.config.SimpleTrophiesConfig;
 import quaternary.simpletrophies.common.etc.DateHelpers;
 import quaternary.simpletrophies.common.etc.EnumTrophyVariant;
 import quaternary.simpletrophies.common.etc.TrophyHelpers;
@@ -38,54 +33,57 @@ import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ItemSimpleTrophy extends ItemBlock {
-	public ItemSimpleTrophy(BlockSimpleTrophy block) {
-		super(block);
+import static quaternary.simpletrophies.common.config.TrophyConfig.ClientConfig.SHOW_EARNEDAT;
+import static quaternary.simpletrophies.common.config.TrophyConfig.ClientConfig.TOOLTIP_CREDITS;
+
+public class ItemSimpleTrophy extends BlockItem {
+	public ItemSimpleTrophy(BlockSimpleTrophy block, Properties properties) {
+		super(block,properties);
 	}
-	
+
+
 	@Override
-	public void onUpdate(ItemStack stack, World world, Entity entity, int itemSlot, boolean isSelected) {
-		if(!stack.hasTagCompound()) stack.setTagCompound(new NBTTagCompound()); 
+	public void inventoryTick(ItemStack stack, World world, Entity entity, int itemSlot, boolean isSelected) {
+		if(!stack.hasTag()) stack.setTag(new CompoundNBT());
 		//Add all of the other NBT tags if they don't already exist
-		NBTTagCompound nbt = stack.getTagCompound();
+		CompoundNBT nbt = stack.getTag();
 		assert nbt != null;
-		if(!nbt.hasKey(BlockSimpleTrophy.KEY_COLOR_RED)) nbt.setInteger(BlockSimpleTrophy.KEY_COLOR_RED, 255);
-		if(!nbt.hasKey(BlockSimpleTrophy.KEY_COLOR_GREEN)) nbt.setInteger(BlockSimpleTrophy.KEY_COLOR_GREEN, 255);
-		if(!nbt.hasKey(BlockSimpleTrophy.KEY_COLOR_BLUE)) nbt.setInteger(BlockSimpleTrophy.KEY_COLOR_BLUE, 255);
-		if(!nbt.hasKey(BlockSimpleTrophy.KEY_ITEM)) nbt.setTag(BlockSimpleTrophy.KEY_ITEM, ItemStack.EMPTY.serializeNBT());
-		if(!nbt.hasKey(BlockSimpleTrophy.KEY_NAME)) nbt.setString(BlockSimpleTrophy.KEY_NAME, "");
-		if(!nbt.hasKey(BlockSimpleTrophy.KEY_VARIANT)) nbt.setString(BlockSimpleTrophy.KEY_VARIANT, "classic");
-		if(!nbt.hasKey(BlockSimpleTrophy.KEY_EARNED_AT)) nbt.setLong(BlockSimpleTrophy.KEY_EARNED_AT, DateHelpers.now());
+		if(!nbt.contains(BlockSimpleTrophy.KEY_COLOR_RED)) nbt.putInt(BlockSimpleTrophy.KEY_COLOR_RED, 255);
+		if(!nbt.contains(BlockSimpleTrophy.KEY_COLOR_GREEN)) nbt.putInt(BlockSimpleTrophy.KEY_COLOR_GREEN, 255);
+		if(!nbt.contains(BlockSimpleTrophy.KEY_COLOR_BLUE)) nbt.putInt(BlockSimpleTrophy.KEY_COLOR_BLUE, 255);
+		if(!nbt.contains(BlockSimpleTrophy.KEY_ITEM)) nbt.put(BlockSimpleTrophy.KEY_ITEM, ItemStack.EMPTY.serializeNBT());
+		if(!nbt.contains(BlockSimpleTrophy.KEY_NAME)) nbt.putString(BlockSimpleTrophy.KEY_NAME, "");
+		if(!nbt.contains(BlockSimpleTrophy.KEY_VARIANT)) nbt.putString(BlockSimpleTrophy.KEY_VARIANT, "classic");
+		if(!nbt.contains(BlockSimpleTrophy.KEY_EARNED_AT)) nbt.putLong(BlockSimpleTrophy.KEY_EARNED_AT, DateHelpers.now());
 		
-		if(entity instanceof EntityPlayer && ((EntityPlayer)entity).isCreative()) {
+		if(entity instanceof PlayerEntity && ((PlayerEntity)entity).isCreative()) {
 			//Move vanilla customname stuff (italic) over to my own system
 			//This just lets people rename the trophy in an anvil instead of needing to manually NBT hack
 			//and have it not show up all... italicy and weird
 			if(stack.hasDisplayName()) {
-				String customName = stack.getDisplayName();
-				nbt.setString(BlockSimpleTrophy.KEY_NAME, customName.equals("<CLEAR>") ? "" : customName);
+				String customName = stack.getDisplayName().getUnformattedComponentText();
+				nbt.putString(BlockSimpleTrophy.KEY_NAME, customName.equals("<CLEAR>") ? "" : customName);
 				stack.clearCustomName();
 				
 				//remove the funky anvil tag too
-				if(nbt.hasKey("RepairCost")) nbt.removeTag("RepairCost");
+				if(nbt.contains("RepairCost")) nbt.remove("RepairCost");
 			}
 		}
 	}
 	
 	@Override
-	public String getItemStackDisplayName(ItemStack stack) {
-		String trophyName = TrophyHelpers.getDisplayedName(stack);
-		if(trophyName.isEmpty()) return super.getItemStackDisplayName(stack);
-		else return I18n.translateToLocal(trophyName);
+	public ITextComponent getDisplayName(ItemStack stack) {
+		ITextComponent trophyName = TrophyHelpers.getDisplayedName(stack);
+		return trophyName != null ? trophyName : super.getDisplayName(stack);
 	}
 	
-	@SideOnly(Side.CLIENT)
+	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void addInformation(ItemStack stack, @Nullable World world, List<String> tooltip, ITooltipFlag mistake) {
+	public void addInformation(ItemStack stack, @Nullable World world, List<ITextComponent> tooltip, ITooltipFlag mistake) {
 		ItemStack displayedStack = TrophyHelpers.getDisplayedStack(stack);
 		if(!displayedStack.isEmpty()) {
 			//add the "Displayed" tooltip
-			tooltip.add(I18n.translateToLocalFormatted("simple_trophies.misc.tooltip.displaying", displayedStack.getRarity().color + displayedStack.getDisplayName()));
+			tooltip.add(new TranslationTextComponent("simple_trophies.misc.tooltip.displaying",displayedStack.getDisplayName()).applyTextStyles(displayedStack.getRarity().color));
 			
 			//add additional debugging information
 			if(mistake.isAdvanced()) {
@@ -96,76 +94,80 @@ public class ItemSimpleTrophy extends ItemBlock {
 				bob.append(" (#");
 				bob.append(Item.getIdFromItem(displayedStack.getItem()));
 				bob.append('/');
-				bob.append(displayedStack.getItemDamage());
+//				bob.append(displayedStack.getItemDamage());
 				bob.append(')');
-				tooltip.add(bob.toString());
+				tooltip.add(new StringTextComponent(bob.toString()));
 			}
 			
 			//add the item itself's tooltip. Why not?
-			List<String> displayedTooltip = new ArrayList<>();
+			List<ITextComponent> displayedTooltip = new ArrayList<>();
 			displayedStack.getItem().addInformation(displayedStack, world, displayedTooltip, mistake);
-			displayedTooltip.forEach(s -> tooltip.add("   " + s));
+			displayedTooltip.forEach(s -> tooltip.add(new StringTextComponent("   " + s)));
 		}
 		
 		EnumTrophyVariant trophyVariant = TrophyHelpers.getDisplayedVariant(stack);
 		if(mistake.isAdvanced()) {
-			tooltip.add(TextFormatting.DARK_GRAY + I18n.translateToLocalFormatted("simple_trophies.misc.modelName", trophyVariant.blockstateVariant));
+			tooltip.add(new TranslationTextComponent("simple_trophies.misc.modelName", trophyVariant.blockstateVariant).applyTextStyle(TextFormatting.GRAY));
 		}
 		
 		long time = TrophyHelpers.getEarnTime(stack);
-		if(SimpleTrophiesConfig.SHOW_EARNEDAT && time != 0) {
-			tooltip.add(I18n.translateToLocalFormatted("simple_trophies.misc.earnedAt", DateHelpers.epochToString(time)));
+		if(SHOW_EARNEDAT.get() && time != 0) {
+			tooltip.add(new TranslationTextComponent("simple_trophies.misc.earnedAt", DateHelpers.epochToString(time)));
 		}
 		
-		if(SimpleTrophiesConfig.TOOLTIP_CREDITS) {
-			tooltip.add(TextFormatting.DARK_GRAY + I18n.translateToLocalFormatted("simple_trophies.misc.modelBy", trophyVariant.author));
+		if(TOOLTIP_CREDITS.get()) {
+			tooltip.add(new TranslationTextComponent("simple_trophies.misc.modelBy", trophyVariant.author).applyTextStyle(TextFormatting.DARK_GRAY));
 		}
 		
 		super.addInformation(stack, world, tooltip, mistake);
 	}
 	
 	@Override
-	public EnumRarity getRarity(ItemStack stack) {
+	public Rarity getRarity(ItemStack stack) {
 		ItemStack displayedItem = TrophyHelpers.getDisplayedStack(stack);
-		return displayedItem.isEmpty() ? EnumRarity.COMMON : displayedItem.getRarity();
+		return displayedItem.isEmpty() ? Rarity.COMMON : displayedItem.getRarity();
 	}
-	
+
 	@Override
-	public boolean placeBlockAt(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ, IBlockState newState) {
+	protected boolean placeBlock(BlockItemUseContext context, BlockState newState) {
+		World world = context.getWorld();
+		BlockPos pos = context.getPos();
+		PlayerEntity player = context.getPlayer();
+		ItemStack stack = context.getItem();
+
 		if (!world.setBlockState(pos, newState, 11)) return false;
-		
-		IBlockState state = world.getBlockState(pos);
-		if (state.getBlock() == this.block) {
+
+		BlockState state = world.getBlockState(pos);
+		if (state.getBlock() == this.getBlock()) {
 			TileEntity tile = world.getTileEntity(pos);
 			if(tile instanceof TileSimpleTrophy) {
 				TrophyHelpers.populateTileNBTFromStack(stack, (TileSimpleTrophy) tile);
 			}
-			
-			this.block.onBlockPlacedBy(world, pos, state, player, stack);
-			
-			if (player instanceof EntityPlayerMP) {
-				CriteriaTriggers.PLACED_BLOCK.trigger((EntityPlayerMP) player, pos, stack);
+
+			this.getBlock().onBlockPlacedBy(world, pos, state, player, stack);
+
+			if (player instanceof ServerPlayerEntity) {
+				CriteriaTriggers.PLACED_BLOCK.trigger((ServerPlayerEntity) player, pos, stack);
 			}
 		}
-		
-		return true;
-	}
-	
+
+		return true;	}
+
 	@Override
-	public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand) {
+	public ActionResult<ItemStack> onItemRightClick(World world, PlayerEntity player, Hand hand) {
 		if(player.isCreative()) {
 			ItemStack held = player.getHeldItem(hand);
-			if(held.hasTagCompound() && world.isRemote) {
-				NBTTagCompound cmp = held.getTagCompound().copy();
+			if(held.hasTag() && world.isRemote) {
+				CompoundNBT cmp = held.getTag().copy();
 				//Remove earned time since authors aren't likely to want that
-				cmp.removeTag(BlockSimpleTrophy.KEY_EARNED_AT);
+				cmp.remove(BlockSimpleTrophy.KEY_EARNED_AT);
 				String str = cmp.toString();
 				
-				LogManager.getLogger(SimpleTrophies.NAME).info(str);
+				SimpleTrophies.LOG.info(str);
 				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(str), null);
-				player.sendStatusMessage(new TextComponentTranslation("simple_trophies.misc.copied"), true);
+				player.sendStatusMessage(new TranslationTextComponent("simple_trophies.misc.copied"), true);
 			}
-			return new ActionResult<>(EnumActionResult.SUCCESS, held);
+			return new ActionResult<>(ActionResultType.SUCCESS, held);
 		}
 		
 		return super.onItemRightClick(world, player, hand);

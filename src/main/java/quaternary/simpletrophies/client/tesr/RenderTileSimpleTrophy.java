@@ -1,30 +1,27 @@
 package quaternary.simpletrophies.client.tesr;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.block.model.IBakedModel;
-import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
-import net.minecraft.item.ItemBlock;
+import net.minecraft.client.renderer.model.ItemCameraTransforms;
+import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.text.translation.I18n;
-import org.lwjgl.opengl.GL11;
 import quaternary.simpletrophies.SimpleTrophies;
 import quaternary.simpletrophies.client.ClientGameEvents;
-import quaternary.simpletrophies.common.config.SimpleTrophiesConfig;
 import quaternary.simpletrophies.common.etc.DateHelpers;
 import quaternary.simpletrophies.common.tile.TileSimpleTrophy;
 
-public class RenderTileSimpleTrophy extends TileEntitySpecialRenderer<TileSimpleTrophy> {	
+import static quaternary.simpletrophies.common.config.TrophyConfig.ClientConfig.*;
+
+public class RenderTileSimpleTrophy extends TileEntityRenderer<TileSimpleTrophy> {
 	@Override
-	public void render(TileSimpleTrophy te, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
-		if(te == null || SimpleTrophiesConfig.NO_TESR) return;
+	public void render(TileSimpleTrophy te, double x, double y, double z, float partialTicks, int destroyStage) {
+		if(te == null || NO_TESR.get()) return;
 		
 		ItemStack displayedStack = te.displayedStack;
 		
-		if(!SimpleTrophiesConfig.SKIP_BLOCK_ITEMS && !displayedStack.isEmpty()) {
+		if(!SKIP_BLOCK_ITEMS.get() && !displayedStack.isEmpty()) {
 			float ticks = ClientGameEvents.getPauseAdjustedTicksAndPartialTicks();
 			
 			//spread out animations a little bit.
@@ -34,17 +31,17 @@ public class RenderTileSimpleTrophy extends TileEntitySpecialRenderer<TileSimple
 			
 			GlStateManager.pushMatrix();
 			
-			GlStateManager.translate(x + .5, y + .6 + Math.sin(ticks / 25f) / 7f, z + .5);
+			GlStateManager.translated(x + .5, y + .6 + Math.sin(ticks / 25f) / 7f, z + .5);
 			
-			if(!Minecraft.getMinecraft().getRenderItem().getItemModelMesher().getItemModel(displayedStack).isGui3d()) {
-				GlStateManager.translate(0, 0.2, 0);
+			if(!Minecraft.getInstance().getItemRenderer().getItemModelMesher().getItemModel(displayedStack).isGui3d()) {
+				GlStateManager.translated(0, 0.2, 0);
 			}
 			
-			GlStateManager.rotate((ticks * 2.5f) % 360, 0, 1, 0);
-			GlStateManager.scale(1.6, 1.6, 1.6);
+			GlStateManager.rotatef((ticks * 2.5f) % 360, 0, 1, 0);
+			GlStateManager.scaled(1.6, 1.6, 1.6);
 			try {
 				
-				Minecraft.getMinecraft().getRenderItem().renderItem(displayedStack, ItemCameraTransforms.TransformType.GROUND);
+				Minecraft.getInstance().getItemRenderer().renderItem(displayedStack, ItemCameraTransforms.TransformType.GROUND);
 			} catch(Exception oof) {
 				SimpleTrophies.LOG.error("Problem rendering item on a trophy TESR", oof);
 			}
@@ -55,10 +52,10 @@ public class RenderTileSimpleTrophy extends TileEntitySpecialRenderer<TileSimple
 		}
 		
 		RayTraceResult hit = rendererDispatcher.cameraHitResult;
-		if(hit != null && te.getPos().equals(hit.getBlockPos())) {
+		if(hit instanceof BlockRayTraceResult && te.getPos().equals(((BlockRayTraceResult)hit).getPos())) {
 			setLightmapDisabled(true);
 			
-			if(SimpleTrophiesConfig.SHOW_EARNEDAT && te.earnedTime != 0) {
+			if(SHOW_EARNEDAT.get() && te.earnedTime != 0) {
 				String formattedTime = DateHelpers.epochToString(te.earnedTime);
 				drawNameplate(te, formattedTime, x, y + 0.3, z, 12);
 			}

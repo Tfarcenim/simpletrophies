@@ -1,15 +1,13 @@
 package quaternary.simpletrophies.client.tesr;
 
-import net.minecraft.block.properties.PropertyEnum;
+import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockRendererDispatcher;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.block.model.IBakedModel;
-import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
-import net.minecraft.client.renderer.block.model.ModelManager;
-import net.minecraft.client.renderer.block.model.ModelResourceLocation;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer;
+import net.minecraft.client.renderer.model.IBakedModel;
+import net.minecraft.client.renderer.model.ItemCameraTransforms;
+import net.minecraft.client.renderer.model.ModelResourceLocation;
+import net.minecraft.client.renderer.texture.AtlasTexture;
+import net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import quaternary.simpletrophies.SimpleTrophies;
@@ -22,17 +20,17 @@ import quaternary.simpletrophies.common.item.ItemSimpleTrophy;
 
 import java.util.EnumMap;
 
-public class RenderItemStackSimpleTrophy extends TileEntityItemStackRenderer {
+import static quaternary.simpletrophies.common.config.TrophyConfig.ClientConfig.*;
+
+public class RenderItemStackSimpleTrophy extends ItemStackTileEntityRenderer {
 	public static final EnumMap<EnumTrophyVariant, ModelResourceLocation> baseLocations;
 	static final EnumMap<EnumTrophyVariant, IBakedModel> baseModels;
 	
 	static {
 		baseLocations = new EnumMap<>(EnumTrophyVariant.class);
-		PropertyEnum<EnumTrophyVariant> propVariant = BlockSimpleTrophy.PROP_VARIANT;
-		String variantName = propVariant.getName();
 		
 		for(EnumTrophyVariant var : EnumTrophyVariant.VALUES) {
-			baseLocations.put(var, new ModelResourceLocation(new ResourceLocation(SimpleTrophies.MODID, "trophy"), variantName + '=' + propVariant.getName(var)));
+			//baseLocations.put(var, new ModelResourceLocation(new ResourceLocation(SimpleTrophies.MODID, "trophy"), variantName + '=' + propVariant.getName(var)));
 		}
 		
 		baseModels = new EnumMap<>(EnumTrophyVariant.class);
@@ -46,12 +44,12 @@ public class RenderItemStackSimpleTrophy extends TileEntityItemStackRenderer {
 	
 	@Override
 	public void renderByItem(ItemStack stack) {
-		if(SimpleTrophiesConfig.NO_TEISR || !(stack.getItem() instanceof ItemSimpleTrophy)) return;
+		if(NO_TEISR.get() || !(stack.getItem() instanceof ItemSimpleTrophy)) return;
 		
 		//Render the base
-		BlockRendererDispatcher brd = Minecraft.getMinecraft().getBlockRendererDispatcher();
+		BlockRendererDispatcher brd = Minecraft.getInstance().getBlockRendererDispatcher();
 		
-		if(!SimpleTrophiesConfig.SKIP_ITEM_BASES) {
+		if(!SKIP_ITEM_BASES.get()) {
 			EnumTrophyVariant baseVariant = TrophyHelpers.getDisplayedVariant(stack);
 			IBakedModel baseModel = baseModels.computeIfAbsent(baseVariant, (var) ->
 				brd.getBlockModelShapes().getModelManager().getModel(baseLocations.get(var))
@@ -65,20 +63,20 @@ public class RenderItemStackSimpleTrophy extends TileEntityItemStackRenderer {
 		}
 		
 		//Render the item
-		if(!SimpleTrophiesConfig.SKIP_ITEM_ITEMS) {
+		if(!SKIP_ITEM_ITEMS.get()) {
 			ItemStack displayedStack = TrophyHelpers.getDisplayedStack(stack);
 			
 			if(!displayedStack.isEmpty()) {
 				float ticks = ClientGameEvents.getPauseAdjustedTicksAndPartialTicks();
 				
 				GlStateManager.pushMatrix();
-				GlStateManager.translate(.5, .55, .5);
-				if(!Minecraft.getMinecraft().getRenderItem().getItemModelMesher().getItemModel(displayedStack).isGui3d()) {
-					GlStateManager.translate(0, 0.1, 0);
+				GlStateManager.translated(.5, .55, .5);
+				if(!Minecraft.getInstance().getItemRenderer().getItemModelMesher().getItemModel(displayedStack).isGui3d()) {
+					GlStateManager.translated(0, 0.1, 0);
 				}
 				
-				GlStateManager.rotate(ticks * 2.5f, 0, 1, 0);
-				GlStateManager.scale(2, 2, 2);
+				GlStateManager.rotated(ticks * 2.5f, 0, 1, 0);
+				GlStateManager.scaled(2, 2, 2);
 				
 				//Fix flickering leaves issue on old Forges
 				//Without this line:
@@ -106,7 +104,7 @@ public class RenderItemStackSimpleTrophy extends TileEntityItemStackRenderer {
 				//
 				//Flickering leaves were fixed in https://github.com/MinecraftForge/MinecraftForge/pull/4997
 				//But it still stateleaks technically, you just can't see it on leaves.
-				Minecraft.getMinecraft().getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+				Minecraft.getInstance().getTextureManager().getTexture(AtlasTexture.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
 				
 				//Too many nested pushmatrixes can cause severe render glitching on my pc.
 				//Nobody's going to actually hand out trophies of trophies of trophies of trophies of trophies of trophies anyways.
@@ -116,7 +114,7 @@ public class RenderItemStackSimpleTrophy extends TileEntityItemStackRenderer {
 				
 				if(recursionDepth < 5) {
 					try {
-						Minecraft.getMinecraft().getRenderItem().renderItem(displayedStack, ItemCameraTransforms.TransformType.GROUND);
+						Minecraft.getInstance().getItemRenderer().renderItem(displayedStack, ItemCameraTransforms.TransformType.GROUND);
 					} catch(Exception oof) {
 						SimpleTrophies.LOG.error("Problem rendering item on a trophy TEISR", oof);
 					}

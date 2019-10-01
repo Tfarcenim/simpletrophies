@@ -1,6 +1,5 @@
 package quaternary.simpletrophies.common.etc;
 
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;

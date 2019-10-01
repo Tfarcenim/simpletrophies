@@ -1,17 +1,17 @@
 package quaternary.simpletrophies.common.tile;
 
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
+import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.translation.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import quaternary.simpletrophies.SimpleTrophies;
 import quaternary.simpletrophies.common.block.BlockSimpleTrophy;
 import quaternary.simpletrophies.common.etc.EnumTrophyVariant;
 
@@ -25,69 +25,73 @@ public class TileSimpleTrophy extends TileEntity {
 	public int displayedColorBlue = 255;
 	public EnumTrophyVariant displayedVariant = EnumTrophyVariant.CLASSIC;
 	public long earnedTime = 0;
-	
+
+	public TileSimpleTrophy() {
+		super(SimpleTrophies.RegistryObjects.tile);
+	}
+
 	public String getLocalizedName() {
-		return I18n.translateToLocal(displayedName);
+		return I18n.format(displayedName);
 	}
 	
 	@Nullable
 	@Override
-	public SPacketUpdateTileEntity getUpdatePacket() {
-		return new SPacketUpdateTileEntity(pos, 6969, getUpdateTag());
+	public SUpdateTileEntityPacket getUpdatePacket() {
+		return new SUpdateTileEntityPacket(pos, 6969, getUpdateTag());
 	}
 	
 	@Override
-	public NBTTagCompound getUpdateTag() {
-		return writeToNBT(new NBTTagCompound());
+	public CompoundNBT getUpdateTag() {
+		return write(new CompoundNBT());
 	}
 	
 	@Override
-	public void handleUpdateTag(NBTTagCompound nbt) {
+	public void handleUpdateTag(CompoundNBT nbt) {
 		readFromNBTInternal(nbt);
-		IBlockState hahaYes = world.getBlockState(pos);
+		BlockState hahaYes = world.getBlockState(pos);
 		world.notifyBlockUpdate(pos, hahaYes, hahaYes, 3);
 	}
 	
 	@Override
-	public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
+	public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
 		handleUpdateTag(pkt.getNbtCompound());
 	}
 	
 	@Override
-	public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
+	public CompoundNBT write(CompoundNBT nbt) {
 		writeToNBTInternal(nbt);
-		return super.writeToNBT(nbt);
+		return super.write(nbt);
 	}
 	
 	@Override
-	public void readFromNBT(NBTTagCompound nbt) {
-		super.readFromNBT(nbt);
+	public void read(CompoundNBT nbt) {
+		super.read(nbt);
 		readFromNBTInternal(nbt);
 	}
 	
-	public NBTTagCompound writeToNBTInternal(NBTTagCompound nbt) {
-		nbt.setTag(BlockSimpleTrophy.KEY_ITEM, displayedStack.serializeNBT());
-		nbt.setString(BlockSimpleTrophy.KEY_NAME, displayedName);
-		nbt.setInteger(BlockSimpleTrophy.KEY_COLOR_RED, displayedColorRed);
-		nbt.setInteger(BlockSimpleTrophy.KEY_COLOR_GREEN, displayedColorGreen);
-		nbt.setInteger(BlockSimpleTrophy.KEY_COLOR_BLUE, displayedColorBlue);
-		nbt.setString(BlockSimpleTrophy.KEY_VARIANT, displayedVariant.getName());
-		nbt.setLong(BlockSimpleTrophy.KEY_EARNED_AT, earnedTime);
+	public CompoundNBT writeToNBTInternal(CompoundNBT nbt) {
+		nbt.put(BlockSimpleTrophy.KEY_ITEM, displayedStack.serializeNBT());
+		nbt.putString(BlockSimpleTrophy.KEY_NAME, displayedName);
+		nbt.putInt(BlockSimpleTrophy.KEY_COLOR_RED, displayedColorRed);
+		nbt.putInt(BlockSimpleTrophy.KEY_COLOR_GREEN, displayedColorGreen);
+		nbt.putInt(BlockSimpleTrophy.KEY_COLOR_BLUE, displayedColorBlue);
+		nbt.putString(BlockSimpleTrophy.KEY_VARIANT, displayedVariant.getName());
+		nbt.putLong(BlockSimpleTrophy.KEY_EARNED_AT, earnedTime);
 		
 		return nbt;
 	}
 	
-	public void readFromNBTInternal(NBTTagCompound nbt) {
-		displayedStack = new ItemStack(nbt.getCompoundTag(BlockSimpleTrophy.KEY_ITEM));
+	public void readFromNBTInternal(CompoundNBT nbt) {
+		displayedStack = ItemStack.read((CompoundNBT) nbt.get(BlockSimpleTrophy.KEY_ITEM));
 		displayedName = nbt.getString(BlockSimpleTrophy.KEY_NAME);
-		displayedColorRed = nbt.getInteger(BlockSimpleTrophy.KEY_COLOR_RED);
-		displayedColorGreen = nbt.getInteger(BlockSimpleTrophy.KEY_COLOR_GREEN);
-		displayedColorBlue = nbt.getInteger(BlockSimpleTrophy.KEY_COLOR_BLUE);
+		displayedColorRed = nbt.getInt(BlockSimpleTrophy.KEY_COLOR_RED);
+		displayedColorGreen = nbt.getInt(BlockSimpleTrophy.KEY_COLOR_GREEN);
+		displayedColorBlue = nbt.getInt(BlockSimpleTrophy.KEY_COLOR_BLUE);
 		displayedVariant = EnumTrophyVariant.fromString(nbt.getString(BlockSimpleTrophy.KEY_VARIANT));
 		earnedTime = nbt.getLong(BlockSimpleTrophy.KEY_EARNED_AT);
 	}
 	
-	@SideOnly(Side.CLIENT)
+	@OnlyIn(Dist.CLIENT)
 	@Override
 	public AxisAlignedBB getRenderBoundingBox() {
 		return new AxisAlignedBB(pos).expand(0, 0.5, 0);
