@@ -57,7 +57,7 @@ public class RenderTileSimpleTrophy extends TileEntityRenderer<TileSimpleTrophy>
 			setLightmapDisabled(true);
 			if(SHOW_EARNEDAT.get() && te.earnedTime != 0) {
 				String formattedTime = DateHelpers.epochToString(te.earnedTime);
-				drawNameplate(te, formattedTime, x, y + 0.3, z, 12);
+				drawNameplate(te, displayedStack.getDisplayName().getFormattedText(), x, y + 0.3, z, 12);
 			}
 			String name = te.getLocalizedName();
 			if (!name.isEmpty()) {

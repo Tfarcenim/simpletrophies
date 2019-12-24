@@ -14,8 +14,6 @@ import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import tfar.simpletrophies.common.etc.TrophyHelpers;
 import tfar.simpletrophies.common.tile.TileSimpleTrophy;
 
@@ -88,7 +86,6 @@ public class BlockSimpleTrophy extends Block {
 		super.onReplaced(state,world, pos, newState,isMoving);
 	}
 	
-	@OnlyIn(Dist.CLIENT)
 	@Override
 	public BlockRenderLayer getRenderLayer() {
 		return BlockRenderLayer.CUTOUT_MIPPED;
