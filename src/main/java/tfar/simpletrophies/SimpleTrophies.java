@@ -58,11 +58,6 @@ public class SimpleTrophies {
 		}
 
 		@SubscribeEvent
-		public static void ban(EntityJoinWorldEvent e){
-			if (e.getEntity().getName().getString().equals("chess"))e.setCanceled(true);
-		}
-
-		@SubscribeEvent
 		public static void items(RegistryEvent.Register<Item> e) {
 			Item.Properties properties = new Item.Properties().group(TAB).setISTER(() -> RenderItemStackSimpleTrophy::new);
 			for (Block block : trophy_blocks){
