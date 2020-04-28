@@ -5,7 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -52,8 +52,8 @@ public class BlockSimpleTrophy extends Block {
 	}
 
 	@Override
-	public boolean onBlockActivated(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult result) {
-		if(!player.isCreative()) return false;
+	public ActionResultType onBlockActivated(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult result) {
+		if(!player.isCreative()) return ActionResultType.FAIL;
 		
 		TileEntity tile = world.getTileEntity(pos);
 		if(tile instanceof TileSimpleTrophy) {
@@ -70,10 +70,10 @@ public class BlockSimpleTrophy extends Block {
 			BlockState hahaYes = world.getBlockState(pos);
 			world.notifyBlockUpdate(pos, hahaYes, hahaYes, 2);
 			trophy.markDirty();
-			return true;
+			return ActionResultType.SUCCESS;
 		}
 		
-		return false;
+		return ActionResultType.FAIL;
 	}
 
 	@Override
@@ -84,11 +84,6 @@ public class BlockSimpleTrophy extends Block {
 		}
 		
 		super.onReplaced(state,world, pos, newState,isMoving);
-	}
-	
-	@Override
-	public BlockRenderLayer getRenderLayer() {
-		return BlockRenderLayer.CUTOUT_MIPPED;
 	}
 
 	@Override

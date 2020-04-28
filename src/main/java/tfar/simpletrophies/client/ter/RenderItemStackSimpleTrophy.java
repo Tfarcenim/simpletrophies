@@ -1,12 +1,16 @@
-package tfar.simpletrophies.client.tesr;
+package tfar.simpletrophies.client.ter;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.client.renderer.Vector3f;
 import net.minecraft.client.renderer.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Util;
 import tfar.simpletrophies.SimpleTrophies;
+import tfar.simpletrophies.common.config.TrophyConfig;
 import tfar.simpletrophies.common.etc.TrophyHelpers;
 import tfar.simpletrophies.common.item.ItemSimpleTrophy;
 
@@ -33,47 +37,52 @@ public class RenderItemStackSimpleTrophy extends ItemStackTileEntityRenderer {
 	}
 
 	@Override
-	public void renderByItem(ItemStack stack) {
+	public void render(ItemStack stack, MatrixStack matrices, IRenderTypeBuffer bufferIn, int combinedLightIn, int combinedOverlayIn) {
 		if (NO_TEISR.get() || !(stack.getItem() instanceof ItemSimpleTrophy)) return;
-		GlStateManager.pushMatrix();
+		matrices.push();
 		if (itemRenderer == null) itemRenderer = mc.getItemRenderer();
-		model.handlePerspective(transform);
-		GlStateManager.translatef(0.5F, 0.5F, 0.5F);
-		this.itemRenderer.renderItem(stack, model.internal);
+		//model.handlePerspective(transform,matrices);
+		matrices.translate(0.5F, 0.5F, 0.5F);
+
+			itemRenderer.renderItem(stack, ItemCameraTransforms.TransformType.FIXED,false,matrices,
+						 bufferIn,combinedLightIn,combinedOverlayIn,model.internal);
+
+		//this.itemRenderer.renderItem(stack, model.internal);
 
 		ItemStack displayedStack = TrophyHelpers.getDisplayedStack(stack);
 
 		if(!displayedStack.isEmpty()) {
 			//float ticks = ClientGameEvents.getPauseAdjustedTicksAndPartialTicks();
-			double ticks =  360d * (System.currentTimeMillis() & 0x3FFF) / 0x3FFF;
+			double ticks = ( Util.milliTime()/20f + mc.getRenderPartialTicks()) * .5;
 
 			//spread out animations a little bit.
 			//...Used to use an actually pretty good hash function here, but I like the way this one makes
 			//lines of trophies on the ground make a little wave. Wooo!
 			//ticks += (te.getPos().getX() ^ te.getPos().getZ()) * 30;
 
-			GlStateManager.pushMatrix();
+			matrices.push();
 
-			GlStateManager.translated( 0,  + .25 + Math.sin(ticks / 25f) / 7f,  + 0);
+			matrices.translate( 0,  + .25 + Math.sin(ticks / 25f) / 7f,  + 0);
 
 			//		if(!Minecraft.getInstance().getItemRenderer().getItemModelMesher().getItemModel(displayedStack).isGui3d()) {
 			//		GlStateManager.translated(0, 0.2, 0);
 			//	}
 
-			GlStateManager.rotated((ticks * 2.5f) % 360, 0, 1, 0);
-			GlStateManager.scaled(1.6, 1.6, 1.6);
+			//GlStateManager.rotated((ticks * 2.5f) % 360, 0, 1, 0);
+			matrices.rotate(Vector3f.YP.rotationDegrees((float)(ticks * 2.5) % 360));
+
+			float scale = TrophyConfig.ClientConfig.SCALE.get().floatValue();
+			matrices.scale(scale, scale, scale);
+
 			try {
 
-				Minecraft.getInstance().getItemRenderer().renderItem(displayedStack, ItemCameraTransforms.TransformType.GROUND);
+				Minecraft.getInstance().getItemRenderer().renderItem(displayedStack, ItemCameraTransforms.TransformType.GROUND,combinedLightIn,combinedOverlayIn,matrices,bufferIn);
 			} catch(Exception oof) {
 				SimpleTrophies.LOG.error("Problem rendering item on a trophy TESR", oof);
 			}
-
-			GlStateManager.enableBlend(); //fix a stateleak in renderitem >.>
-
-			GlStateManager.popMatrix();
+			//GlStateManager.enableBlend(); //fix a stateleak in renderitem >.>
+			matrices.pop();
 		}
-
-		GlStateManager.popMatrix();
+		matrices.pop();
 	}
 }

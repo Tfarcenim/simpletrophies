@@ -3,6 +3,8 @@ package tfar.simpletrophies.client;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.client.renderer.color.BlockColors;
 import net.minecraft.client.renderer.color.IBlockColor;
 import net.minecraft.client.renderer.color.IItemColor;
@@ -20,24 +22,20 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import tfar.simpletrophies.SimpleTrophies;
-import tfar.simpletrophies.client.tesr.RenderItemStackSimpleTrophy;
-import tfar.simpletrophies.client.tesr.RenderTileSimpleTrophy;
-import tfar.simpletrophies.client.tesr.TrophyModelWrapper;
+import tfar.simpletrophies.client.ter.RenderItemStackSimpleTrophy;
+import tfar.simpletrophies.client.ter.RenderTileSimpleTrophy;
+import tfar.simpletrophies.client.ter.TrophyModelWrapper;
 import tfar.simpletrophies.common.etc.TrophyHelpers;
 import tfar.simpletrophies.common.tile.TileSimpleTrophy;
 
 import java.util.Map;
 
-import static tfar.simpletrophies.common.config.TrophyConfig.ClientConfig.NO_TEISR;
-
 @Mod.EventBusSubscriber(modid = SimpleTrophies.MODID, value = Dist.CLIENT,bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ClientGameEvents {
 	@SubscribeEvent
 	public static void models(ModelRegistryEvent e) {
-		if (!NO_TEISR.get()) {
-
-		}
-				ClientRegistry.bindTileEntitySpecialRenderer(TileSimpleTrophy.class, new RenderTileSimpleTrophy());
+		SimpleTrophies.RegistryEvents.trophy_blocks.forEach( block -> RenderTypeLookup.setRenderLayer(block, RenderType.cutoutMipped()));
+				ClientRegistry.bindTileEntityRenderer(SimpleTrophies.RegistryObjects.tile, RenderTileSimpleTrophy::new);
 		}
 
 	@SubscribeEvent

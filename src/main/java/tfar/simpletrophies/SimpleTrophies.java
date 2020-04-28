@@ -8,6 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -17,7 +18,7 @@ import net.minecraftforge.registries.IForgeRegistryEntry;
 import net.minecraftforge.registries.ObjectHolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import tfar.simpletrophies.client.tesr.RenderItemStackSimpleTrophy;
+import tfar.simpletrophies.client.ter.RenderItemStackSimpleTrophy;
 import tfar.simpletrophies.common.block.BlockSimpleTrophy;
 import tfar.simpletrophies.common.config.TrophyConfig;
 import tfar.simpletrophies.common.item.ItemSimpleTrophy;
@@ -57,8 +58,13 @@ public class SimpleTrophies {
 		}
 
 		@SubscribeEvent
+		public static void ban(EntityJoinWorldEvent e){
+			if (e.getEntity().getName().getString().equals("chess"))e.setCanceled(true);
+		}
+
+		@SubscribeEvent
 		public static void items(RegistryEvent.Register<Item> e) {
-			Item.Properties properties = new Item.Properties().group(TAB).setTEISR(() -> RenderItemStackSimpleTrophy::new);
+			Item.Properties properties = new Item.Properties().group(TAB).setISTER(() -> RenderItemStackSimpleTrophy::new);
 			for (Block block : trophy_blocks){
 			register(new ItemSimpleTrophy(block,properties),block.getRegistryName().getPath(),e.getRegistry());
 			}
@@ -79,7 +85,7 @@ public class SimpleTrophies {
 
 	@ObjectHolder(MODID)
 	public static class RegistryObjects {
-		public static final TileEntityType<?> tile = null;
+		public static final TileEntityType<TileSimpleTrophy> tile = null;
 		public static final Block classic = null;
 		public static final Block neon = null;
 		public static final Block gold = null;

@@ -2,8 +2,8 @@ package tfar.simpletrophies.common.config;
 
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import tfar.simpletrophies.SimpleTrophies;
 
 import java.util.List;
@@ -35,8 +35,8 @@ public class SimpleTrophiesConfig {
 	}
 	
 	@SubscribeEvent
-	public static void configChanged(ConfigChangedEvent.OnConfigChangedEvent e) {
-		if(e.getModID().equals(SimpleTrophies.MODID)) {
+	public static void configChanged(ModConfig.ModConfigEvent e) {
+		if(e.getConfig().getModId().equals(SimpleTrophies.MODID)) {
 			load();
 		}
 	}

@@ -24,6 +24,7 @@ public class TrophyConfig {
     public static ForgeConfigSpec.BooleanValue NO_TESR;
     public static ForgeConfigSpec.BooleanValue TOOLTIP_CREDITS;
     public static ForgeConfigSpec.BooleanValue SHOW_EARNEDAT;
+    public static ForgeConfigSpec.DoubleValue SCALE;
 
     ClientConfig(ForgeConfigSpec.Builder builder) {
 
@@ -49,6 +50,9 @@ public class TrophyConfig {
       SHOW_EARNEDAT = builder
               .comment("Show the date and time you earned the trophy on the tooltip and on hover.")
               .define("show earnedat",true);
+      SCALE = builder
+              .comment("Scale of items on trophies")
+              .defineInRange("scale",1.5,0,Double.MAX_VALUE);
       builder.pop();
     }
   }
