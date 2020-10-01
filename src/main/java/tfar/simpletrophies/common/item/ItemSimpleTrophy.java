@@ -33,7 +33,7 @@ import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 import java.util.List;
 
-import static tfar.simpletrophies.common.config.TrophyConfig.ClientConfig.SHOW_EARNEDAT;
+import static tfar.simpletrophies.common.config.TrophyConfig.ClientConfig.*;
 
 public class ItemSimpleTrophy extends BlockItem {
 	public ItemSimpleTrophy(Block block, Properties properties) {
@@ -82,32 +82,36 @@ public class ItemSimpleTrophy extends BlockItem {
 		ItemStack displayedStack = TrophyHelpers.getDisplayedStack(stack);
 		if(!displayedStack.isEmpty()) {
 			//add the "Displayed" tooltip
-			tooltip.add(new TranslationTextComponent("simple_trophies.misc.tooltip.displaying",displayedStack.getDisplayName()).applyTextStyles(displayedStack.getRarity().color));
-			
-			//add additional debugging information
-			if(mistake.isAdvanced()) {
-				StringBuilder bob = new StringBuilder();
-				bob.append("   ");
-				bob.append(TextFormatting.DARK_GRAY);
-				bob.append(displayedStack.getItem().getRegistryName());
-				bob.append(" (#");
-				bob.append(Item.getIdFromItem(displayedStack.getItem()));
-				bob.append('/');
+			if(SHOW_ITEMNAME.get()) {
+				tooltip.add(new TranslationTextComponent("simple_trophies.misc.tooltip.displaying",displayedStack.getDisplayName()).applyTextStyles(displayedStack.getRarity().color));
+
+				//add additional debugging information
+				if(mistake.isAdvanced()) {
+					StringBuilder bob = new StringBuilder();
+					bob.append("   ");
+					bob.append(TextFormatting.DARK_GRAY);
+					bob.append(displayedStack.getItem().getRegistryName());
+					bob.append(" (#");
+					bob.append(Item.getIdFromItem(displayedStack.getItem()));
+					bob.append('/');
 //				bob.append(displayedStack.getItemDamage());
-				bob.append(')');
-				tooltip.add(new StringTextComponent(bob.toString()));
+					bob.append(')');
+					tooltip.add(new StringTextComponent(bob.toString()));
+				}
 			}
 			
 			//add the item itself's tooltip. Why not?
-			List<ITextComponent> displayedTooltip = new ArrayList<>();
-			displayedStack.getItem().addInformation(displayedStack, world, displayedTooltip, mistake);
-			displayedTooltip.forEach(s -> tooltip.add(new StringTextComponent("   " + s)));
+			if(SHOW_ITEMTOOLTIP.get()) {
+				List<ITextComponent> displayedTooltip = new ArrayList<>();
+				displayedStack.getItem().addInformation(displayedStack, world, displayedTooltip, mistake);
+				displayedTooltip.forEach(s -> tooltip.add(new StringTextComponent("   ").appendSibling(s)));
+			}
 		}
 
 		
 		long time = TrophyHelpers.getEarnTime(stack);
 		if(SHOW_EARNEDAT.get() && time != 0) {
-			tooltip.add(new TranslationTextComponent("simple_trophies.misc.earnedAt", DateHelpers.epochToString(time)));
+			tooltip.add(new TranslationTextComponent("simple_trophies.misc.earnedAt", DateHelpers.epochToString(time)).applyTextStyle(TextFormatting.GRAY));
 		}
 
 		super.addInformation(stack, world, tooltip, mistake);

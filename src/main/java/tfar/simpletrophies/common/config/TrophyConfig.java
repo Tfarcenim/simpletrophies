@@ -23,6 +23,8 @@ public class TrophyConfig {
     public static ForgeConfigSpec.BooleanValue NO_TEISR;
     public static ForgeConfigSpec.BooleanValue NO_TESR;
     public static ForgeConfigSpec.BooleanValue TOOLTIP_CREDITS;
+    public static ForgeConfigSpec.BooleanValue SHOW_ITEMNAME;
+    public static ForgeConfigSpec.BooleanValue SHOW_ITEMTOOLTIP;
     public static ForgeConfigSpec.BooleanValue SHOW_EARNEDAT;
     public static ForgeConfigSpec.DoubleValue SCALE;
 
@@ -50,6 +52,12 @@ public class TrophyConfig {
       SHOW_EARNEDAT = builder
               .comment("Show the date and time you earned the trophy on the tooltip and on hover.")
               .define("show earnedat",true);
+      SHOW_ITEMNAME = builder
+              .comment("Show name of the displayed item.")
+              .define("show itemname", true);
+      SHOW_ITEMTOOLTIP = builder
+              .comment("Show tooltip of the displayed item.")
+              .define("show tooltip", false);
       SCALE = builder
               .comment("Scale of items on trophies")
               .defineInRange("scale",1.5,0,Double.MAX_VALUE);
